@@ -1,0 +1,19 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="{% static "firstProjectApp/css/main.css" %}"/>
+    <script src="{% static "firstProjectApp/js/htmx.min.js" %}"></script>
+    {% block styleSheets %}
+    {% endblock styleSheets %}
+</head>
+<body>
+{% block content %}{% endblock content %}
+</body>
+
+{% block javascript %}
+    <script src="//unpkg.com/alpinejs" defer></script>
+    <script src="{% static "firstProjectApp/js/main.js" %}"></script>
+{% endblock javascript %}
+
+<div></div>

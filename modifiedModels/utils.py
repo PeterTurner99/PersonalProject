@@ -1,7 +1,10 @@
 import os
-def uploadToFunc(filePathStart):
-    def processedUploadTo(obj, filename):
+
+
+def upload_to_func(file_path_start):
+    def processed_upload_to(obj, filename):
         return os.path.join(
-            '%s_%d' % (filePathStart , obj.pk), filename
+            '%s_%d' % (file_path_start, obj.pk), filename
         )
-    return processedUploadTo
+
+    return processed_upload_to
