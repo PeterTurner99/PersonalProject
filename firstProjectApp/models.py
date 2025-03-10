@@ -1,6 +1,6 @@
-from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.validators import MaxValueValidator, MinValueValidator
+from django.db import models
 
 # Create your models here.
 User = get_user_model()
@@ -47,7 +47,7 @@ class IngredientAmount(models.Model):
         unique_together = ('ingredient', 'amount', 'units')
 
 class Recipe(models.Model):
-    name = models.CharField(max_length=250, null=True)
+    name = models.CharField(max_length=250, null=True, unique=True)
     ingredients = models.ManyToManyField(IngredientAmount, blank=True)
     description = models.TextField(null=True, blank=True)
     duration = models.IntegerField(null=True, blank=True, validators=[MinValueValidator(1)])
