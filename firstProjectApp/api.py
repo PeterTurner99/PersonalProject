@@ -1,16 +1,19 @@
 import json
+from random import sample
 from typing import List
+
 from django.db.models import Max
 from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from ninja import Router
+from ninja_jwt.authentication import JWTAuth
+
+from .forms import RecipeCreateForm, RecipeStepUpdateForm, IngredientCreateForm, IngredientAmountCreateForm
+from .models import Recipe, RecipeStep, Ingredient, Unit, IngredientAmount
 from .schemas import RecipeEntryListSchema, RecipeEntryDetailSchema, RecipeEntryCreateSchema, \
     ErrorRecipeEntryCreateSchema, RecipeEntryUpdateSchema, RecipeStepCreateSchema, RecipeStepUpdateSchema, \
     RecipeStepUpdateErrorSchema, ReorderSchema, IngredientEntryListSchema, IngredientEntryCreateSchema, \
     IngredientErrorListSchema, UnitEntryListSchema, IngredientAmountEntryCreateSchema
-from .models import Recipe, RecipeStep, Ingredient, Unit, IngredientAmount
-from ninja_jwt.authentication import JWTAuth
-from django.shortcuts import get_object_or_404
-from .forms import RecipeCreateForm, RecipeStepUpdateForm, IngredientCreateForm, IngredientAmountCreateForm
 
 router = Router()
 
@@ -43,6 +46,19 @@ def list_ingredients_entries(request, ingredientName: IngredientEntryCreateSchem
                                             name__icontains=ingredientName.name).order_by('-pk')
 
     return ingredients[:10]
+
+
+@router.post('/search/', response=List[RecipeEntryListSchema], auth=JWTAuth())
+def recipe_search(request, recipeName: IngredientEntryCreateSchema):
+    if recipeName.name:
+        recipe = Recipe.objects.filter(Q(public=True) | Q(user=request.user),
+                                       name__icontains=recipeName.name).order_by('-pk')
+    else:
+        recipe = Recipe.objects.filter(Q(public=True) | Q(user=request.user))
+        recipe_list = list(recipe)
+        sample_size = min(len(recipe_list), 5)
+        recipe = sample(recipe_list, sample_size)
+    return recipe[:5]
 
 
 @router.delete('/ingredients/{entry_id}/', auth=JWTAuth(), response=List[IngredientEntryListSchema])
