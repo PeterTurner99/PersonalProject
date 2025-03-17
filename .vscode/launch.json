@@ -1,0 +1,213 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "name": "Python: Django",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}\\manage.py",
+            "args": [
+                "runserver"
+            ],
+            "justMyCode": false,
+            "django": true,
+            "envFile": "${workspaceFolder}/../.env"
+        },
+        {
+            "name": "Python: Django 8080",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}\\manage.py",
+            "args": [
+            "runserver","8000"
+            ],
+            "justMyCode": false,
+            "django": true,
+            "envFile": "${workspaceFolder}/../.env"
+        },
+        {
+            "name": "Migrate",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}\\manage.py",
+            "args": [
+                "migrate"
+            ],
+            "django": true,
+            "envFile": "${workspaceFolder}/../.env"
+        },
+        {
+            "name": "MakeMigrate",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}\\manage.py",
+            "args": [
+                "makemigrations"
+            ],
+            "django": true,
+            "justMyCode": false,
+            "envFile": "${workspaceFolder}/../.env"
+        },
+        {
+            "name": "DumpData",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}\\manage.py",
+            "args": [
+                "dumpdata",
+                "--natural-foreign", "--natural-primary", "-e", "contenttypes", "-e" ,"auth.Permission","-e","admin","-e","sessions", "--indent", "4", "-o" ,"data.json"
+            ],
+            "django": true,
+            "envFile": "${workspaceFolder}/../.env"
+        },{
+            "name": "Test",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}\\manage.py",
+            "justMyCode": false,
+            "args": [
+                "test"
+            ],
+            "django": true,
+            "envFile": "${workspaceFolder}/../.env"
+        },{
+            "name": "MakeMigrateMerge",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}\\manage.py",
+            "args": [
+                "makemigrations","--merge"
+            ],
+            "django": true,
+            "envFile": "${workspaceFolder}/../.env"
+        },{
+            "name": "hitsory-populate",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}\\manage.py",
+            "args": [
+                "populate_history","--auto"
+            ],
+            "django": true,
+            "envFile": "${workspaceFolder}/../.env"
+        },{
+            "name": "squash-migrations",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}\\manage.py",
+            "args": [
+                "squashmigrations",
+            ],
+            "django": true,
+            "envFile": "${workspaceFolder}/../.env"
+        },{
+            "name": "fake-migrations",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}\\manage.py",
+            "args": [
+                "migrate","--fake",
+            ],
+            "django": true,
+            "envFile": "${workspaceFolder}/../.env"
+        },{
+            "name": "show-migrations",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}\\manage.py",
+            "args": [
+                "showmigrations",
+            ],
+            "django": true,
+            "envFile": "${workspaceFolder}/../.env"
+        },{
+            "name": "collectstatic",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}\\manage.py",
+            "args": [
+                "collectstatic",
+            ],
+            "django": true,
+            "envFile": "${workspaceFolder}/../.env"
+        },{
+            "name": "undomigration",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}\\manage.py",
+            "args": [
+                "migrate","track","0170_auto_20241111_1548"
+            ],
+            "django": true,
+            "envFile": "${workspaceFolder}/../.env"
+        },{
+            "name": "rename-app",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}\\manage.py",
+            "args": [
+                "renameproject","Stripe","payment"
+            ],
+            "django": true,
+            "envFile": "${workspaceFolder}/../.env"
+        },{
+            "name": "shell",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}\\manage.py",
+            "args": [
+                "shell"
+            ],
+            "django": true,
+            "envFile": "${workspaceFolder}/../.env"
+        },
+        {
+            "name": "new_app",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}\\manage.py",
+            "args": [
+                "startapp","gluedog"
+            ],
+            "django": true,
+            "envFile": "${workspaceFolder}/../.env"
+        },
+        {
+            "name": "no threading",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}\\manage.py",
+            "args": [
+                "runserver","--nothreading"
+            ],
+            "django": true,
+            "envFile": "${workspaceFolder}/../.env"
+        },{
+            "name": "Test Reapit",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}\\manage.py",
+            "justMyCode": false,
+            "args": [
+                "test","reapit/"
+            ],
+            "django": true,
+            "envFile": "${workspaceFolder}/../.env"
+        },
+        {
+            "name": "DumpData2",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}\\manage.py",
+            "args": [
+                "dumpdata" ,">", "data.json"
+            ],
+            "django": true,
+            "envFile": "${workspaceFolder}/../.env"
+        },
+    ]
+}

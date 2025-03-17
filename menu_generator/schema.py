@@ -7,6 +7,12 @@ from firstProjectApp.schemas import RecipeEntryDetailSchema
 
 class SearchSchema(Schema):
     search: str = ""
+    
+class SearchDateRangeSchema(Schema):
+    range: int = 0
+
+class IngredientList(Schema):
+    ingredients: str = ""
 
 
 class MenuListSchema(Schema):

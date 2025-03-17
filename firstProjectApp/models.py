@@ -8,7 +8,7 @@ User = get_user_model()
 
 class Unit(models.Model):
     name = models.CharField(max_length=30)
-    conversionToGrams = models.FloatField()
+    conversionToGrams = models.FloatField(null=True)
 
 class Ingredient(models.Model):
     name = models.CharField(max_length=250)
@@ -44,7 +44,7 @@ class IngredientAmount(models.Model):
         return self.units.name
 
     class Meta:
-        unique_together = ('ingredient', 'amount', 'units')
+        unique_together = ('ingredient', 'amount', 'units', 'details')
 
 class Recipe(models.Model):
     name = models.CharField(max_length=250, null=True, unique=True)
@@ -53,6 +53,8 @@ class Recipe(models.Model):
     duration = models.IntegerField(null=True, blank=True, validators=[MinValueValidator(1)])
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     public = models.BooleanField(default=False)
+    source = models.URLField(null=True, blank=True)
+    serves = models.IntegerField(default=1)
 
 
 class RecipeStep(models.Model):

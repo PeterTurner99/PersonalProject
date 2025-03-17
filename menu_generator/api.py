@@ -11,8 +11,9 @@ from ninja_jwt.authentication import JWTAuth
 from firstProjectApp.models import Recipe
 from menu_generator.forms import MenuAndTimeForm, MenuAndTimeUpdateForm
 from menu_generator.models import MenuAndTime
-from menu_generator.schema import SearchSchema, MenuListSchema, MealAddSchema, errorSchema, MealUpdateSchema, \
+from menu_generator.schema import IngredientList, SearchSchema, MenuListSchema, MealAddSchema, errorSchema, MealUpdateSchema, \
     MenuListAndDateSchema
+from django.utils import timezone
 
 router = Router()
 
@@ -24,7 +25,7 @@ router = Router()
 #   random.sample(recipe_list, 5)
 #
 #
-@router.post('/search/', response=List[MenuListSchema], auth=JWTAuth())
+@router.post('search/', response=List[MenuListSchema], auth=JWTAuth())
 def calendar_search(request, data: SearchSchema):
     data = data.dict()
     search_date = data.get('search')
@@ -38,7 +39,7 @@ def calendar_search(request, data: SearchSchema):
     return menus
 
 
-@router.post('/month/', auth=JWTAuth(), response={200: List[MenuListAndDateSchema]})
+@router.post('month/', auth=JWTAuth(), response={200: List[MenuListAndDateSchema]})
 def get_month_result(request, data: SearchSchema):
     data = data.dict()
     search_date = data.get('search')
@@ -46,12 +47,13 @@ def get_month_result(request, data: SearchSchema):
     date_obj = datetime_obj.date()
     start_date = date_obj - timedelta(days=5)
     end_date = date_obj + timedelta(weeks=6)
-    menus = MenuAndTime.objects.filter(date__gt=start_date, date__lte=end_date, type='d', user=request.user)
+    menus = MenuAndTime.objects.filter(
+        date__gt=start_date, date__lte=end_date, type='d', user=request.user)
     return menus
 
 
-@router.post('/add/', response={200: List[MenuListSchema],
-                                400: errorSchema}, auth=JWTAuth())
+@router.post('add/', response={200: List[MenuListSchema],
+                               400: errorSchema}, auth=JWTAuth())
 def add_meal(request, data: MealAddSchema):
     data = data.dict()
     form_data_dict = {}
@@ -81,6 +83,31 @@ def add_meal(request, data: MealAddSchema):
             errors_list.append(error.get('message', error.get('name')))
         error_dict = {'messages': errors_list}
         return 400, error_dict
+
+
+@router.post('required/', response={200: IngredientList}, auth=JWTAuth())
+def get_required_ingredients(request, data: SearchSchema):
+    data = data.dict()
+    search_range = data.get('range', 7)
+    ingredient_dict = {}
+    date_obj = timezone.now().date()
+    date_future = date_obj + timedelta(days=search_range)
+    menus = MenuAndTime.objects.filter(
+        date__gte=date_obj, date__lt=date_future, user=request.user)
+    for menu in menus:
+        ingredients = menu.recipe.ingredients.all()
+        for ingredient_and_amount in ingredients:
+            ingredient = ingredient_and_amount.ingredient
+            amount = ingredient_and_amount.amount
+            units = ingredient_and_amount.units
+            if ingredient in ingredient_dict:
+                if units.name in ingredient_dict[ingredient.name.capitalize()]:
+                    ingredient_dict[ingredient.name.capitalize()][units.name.capitalize()] += amount
+                else:
+                    ingredient_dict[ingredient.name.capitalize()][units.name.capitalize()] = amount
+            else:
+                ingredient_dict[ingredient.name.capitalize()] = {units.name.capitalize(): amount}
+    return {'ingredients': json.dumps(ingredient_dict)}
 
 
 @router.put('update/{entry_id}/', response={200: MenuListSchema,

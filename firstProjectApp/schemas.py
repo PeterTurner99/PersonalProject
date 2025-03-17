@@ -34,7 +34,7 @@ class RecipeEntryListSchema(schema.Schema):
     description: str = ""
     duration: Optional[int] = None
     userStr: str = ""
-
+    public: bool = False
 
 class IngredientEntryListSchema(schema.Schema):
     id: int
@@ -74,13 +74,18 @@ class RecipeStepUpdateSchema(schema.Schema):
     shortDesc: str = None
     description: str = None
     duration: Optional[int] = None
+    public: Optional[bool] = None
 
 
 class IngredientAmountDetailSchema(schema.Schema):
     id: int
-    amount: int
+    amount: float
     units_str: str
     name: str
+    details: Optional[str] = ""
+
+class urlSchema(schema.Schema):
+    url: str
 
 
 class RecipeEntryDetailSchema(schema.Schema):
