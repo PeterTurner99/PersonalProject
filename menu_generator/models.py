@@ -27,4 +27,4 @@ class MenuAndTime(models.Model):
         return self.date.isoformat()
 
     class Meta:
-        unique_together = ('date', 'type')
+        unique_together = ('date', 'type', 'user')

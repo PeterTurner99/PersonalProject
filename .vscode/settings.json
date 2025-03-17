@@ -1,0 +1,18 @@
+{
+    "python.pythonPath": "c:\\Users\\pizza\\Documents\\repos\\env\\Scripts\\python.exe",
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "prettier.tabWidth": 4,
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.autopep8"
+    },
+    "terminal.integrated.profiles.windows": {
+        "PowerShell": {
+          "source": "PowerShell",
+          "icon": "terminal-powershell",
+          "args": ["-ExecutionPolicy", "Bypass"]
+        }
+      },
+      "terminal.integrated.defaultProfile.windows": "PowerShell"
+      
+    
+}

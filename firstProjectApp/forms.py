@@ -31,16 +31,18 @@ class RecipeStepUpdateForm(forms.ModelForm):
     def clean_shortDesc(self):
         short_desc = self.cleaned_data['shortDesc']
         original_short_desc = self.data['shortDesc']
-        if original_short_desc == None:
+        if short_desc == None:
             return original_short_desc
         return short_desc
 
     def clean_description(self):
         description = self.cleaned_data['description']
         original_description = self.data['description']
-        if original_description == None:
+        if description == None:
             return original_description
         return description
+
+
 
 
 class IngredientAmountCreateForm(forms.ModelForm):

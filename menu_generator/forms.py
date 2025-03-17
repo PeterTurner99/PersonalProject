@@ -14,10 +14,10 @@ from .models import MenuAndTime
 class MenuAndTimeForm(forms.ModelForm):
     class Meta:
         model = MenuAndTime
-        fields = ['recipe', 'date', 'type']
+        fields = ['recipe', 'date', 'type', 'user']
         error_messages = {
             NON_FIELD_ERRORS: {
-                'unique_together': "",
+                'unique_together': "A meal is already specified for that time",
             }
         }
 
