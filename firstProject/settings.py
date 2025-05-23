@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'firstProjectApp.apps.FirstprojectappConfig',
-    'menu_generator.apps.MenuGeneratorConfig'
+    'menu_generator.apps.MenuGeneratorConfig',
 ]
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = False
@@ -73,6 +73,8 @@ CORS_ALLOWED_ORIGINS = [
     'http://192.168.1.204:3000',
     'http://127.0.0.1:3000',
 ]
+
+TIME_INPUT_FORMATS = ('%H:%M',)
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -107,6 +109,11 @@ DATABASES = {
          'HOST': 'localhost',
          'PORT': '',
      }
+}
+
+PUSH_NOTIFICATIONS_SETTINGS = {
+        "WP_PRIVATE_KEY":  os.path.join(BASE_DIR, 'private_key.pem'),
+        "WP_CLAIMS": {'sub': "mailto:s@example.com"}
 }
 
 # Password validation
@@ -180,3 +187,4 @@ NINJA_JWT = {
     "ACCESS_TOKEN_LIFETIME": datetime.timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": datetime.timedelta(days=7),
 }
+# Application Server Key = BBhSH-4YqTzEHGmV-xdfDUTwSM3uybVMx3djFfoOOuKOr8pS8H1lXEi0eTj7vLttTR5JmtZIYEKFxkNzufazaNU

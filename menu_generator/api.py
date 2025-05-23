@@ -3,17 +3,19 @@ from datetime import timedelta
 from typing import List
 
 from dateutil.parser import parse
-from django.http import Http404
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from ninja import Router
 from ninja_jwt.authentication import JWTAuth
 
 from firstProjectApp.models import Recipe
-from menu_generator.forms import MenuAndTimeForm, MenuAndTimeUpdateForm
-from menu_generator.models import MenuAndTime
-from menu_generator.schema import IngredientList, SearchSchema, MenuListSchema, MealAddSchema, errorSchema, MealUpdateSchema, \
+from menu_generator.forms import MenuAndTimeForm, MenuAndTimeUpdateForm, RecurringTaskForm
+from menu_generator.models import MenuAndTime, RepeatingTask
+from menu_generator.schema import IngredientList, RecurringTaskSchema, SearchSchema, MenuListSchema, MealAddSchema, errorSchema, MealUpdateSchema, \
     MenuListAndDateSchema
 from django.utils import timezone
+
+from menu_generator.utils import date_range, tasks_from_date_range
 
 router = Router()
 
@@ -37,6 +39,49 @@ def calendar_search(request, data: SearchSchema):
             "No menus found"
         )
     return menus
+
+
+@router.post('recurring/', auth=JWTAuth())
+def add_recurring_task(request, data: RecurringTaskSchema):
+    data_dict = data.dict()
+    data_dict['user'] = request.user
+    form_data = RecurringTaskForm(data=data_dict)
+    if form_data.is_valid():
+        form_data.save()
+        return JsonResponse(status=200, data={})
+    return HttpResponse()
+
+@router.post('search/month/', auth=JWTAuth())
+def get_month_info(request, data: SearchSchema):
+    data = data.dict()
+    search_date = data.get('search')
+    datetime_obj = parse(search_date)
+    date_obj = datetime_obj.date()
+    start_date = date_obj - timedelta(days=5)
+    user = request.user
+    date_task_dict = tasks_from_date_range(start_date,43, user)
+    date_task_list_new = []
+    for date_task_date, date_task_list in date_task_dict.items():
+        date_task_list_new.append({'date':date_task_date,'recurringTasks':date_task_list})
+    return date_task_list_new
+
+@router.post('search/week/', auth=JWTAuth())
+def get_week_info(request, data: SearchSchema):
+    data = data.dict()
+    search_date = data.get('search')
+    datetime_obj = parse(search_date)
+    date_obj = datetime_obj.date()
+    start_date = date_obj 
+    user = request.user
+    date_task_dict = tasks_from_date_range(start_date,7, user)
+    for date in date_range(start_date,7):
+        if date.isoformat() not in date_task_dict.keys():
+            date_task_dict[date.isoformat()] = []
+    date_task_list_new = []
+    for date_task_date, date_task_list in sorted(date_task_dict.items()):
+        date_task_list_new.append({'date':date_task_date,'recurringTasks':date_task_list})
+    return date_task_list_new
+
 
 
 @router.post('month/', auth=JWTAuth(), response={200: List[MenuListAndDateSchema]})
@@ -102,11 +147,14 @@ def get_required_ingredients(request, data: SearchSchema):
             units = ingredient_and_amount.units
             if ingredient in ingredient_dict:
                 if units.name in ingredient_dict[ingredient.name.capitalize()]:
-                    ingredient_dict[ingredient.name.capitalize()][units.name.capitalize()] += amount
+                    ingredient_dict[ingredient.name.capitalize(
+                    )][units.name.capitalize()] += amount
                 else:
-                    ingredient_dict[ingredient.name.capitalize()][units.name.capitalize()] = amount
+                    ingredient_dict[ingredient.name.capitalize(
+                    )][units.name.capitalize()] = amount
             else:
-                ingredient_dict[ingredient.name.capitalize()] = {units.name.capitalize(): amount}
+                ingredient_dict[ingredient.name.capitalize()] = {
+                    units.name.capitalize(): amount}
     return {'ingredients': json.dumps(ingredient_dict)}
 
 

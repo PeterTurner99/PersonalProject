@@ -117,3 +117,24 @@ class IngredientAmountEntryCreateSchema(schema.Schema):
     amount: int
     name: str = ""
     unit_id: int
+
+
+class PushSetupSchema(schema.Schema):
+    name: str
+    p256dh: str
+    auth: str
+    registration_id: str
+    
+class PushNameSchema(schema.Schema):
+    name: str
+    id: int
+    
+    
+class PushNotificationInformation(schema.Schema):
+    url: str = ""
+    title: str = ""
+    body: str = ""
+    
+    
+class IdSchema(schema.Schema):
+    id: int

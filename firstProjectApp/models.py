@@ -86,3 +86,12 @@ class RecipeReview(models.Model):
     reviewText = models.TextField(null=True, blank=True)
     publicRating = models.BooleanField(default=True)
     publicReview = models.BooleanField(default=True)
+
+
+class PushNotification(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    name = models.CharField(max_length=255, null=True)
+    p256dh = models.CharField(max_length=255)
+    auth = models.CharField(max_length=255)
+    registration_id = models.TextField()
+    current_active =  models.BooleanField(default=False)

@@ -1,4 +1,5 @@
 import json
+import os
 from random import sample
 from typing import List
 import re
@@ -6,18 +7,22 @@ from django.db.models import Max
 from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
+import http_ece
+from httplib2 import Http
 from ingredient_parser import parse_ingredient
 from isodate import parse_duration
 from ninja import Router
 from ninja_jwt.authentication import JWTAuth
+import push_notifications
 from recipe_scrapers import scrape_me, scrape_html
+import requests
 from .forms import RecipeCreateForm, RecipeStepUpdateForm, IngredientCreateForm, IngredientAmountCreateForm
-from .models import Recipe, RecipeStep, Ingredient, Unit, IngredientAmount
-from .schemas import RecipeEntryListSchema, RecipeEntryDetailSchema, RecipeEntryCreateSchema, \
+from .models import PushNotification, Recipe, RecipeStep, Ingredient, Unit, IngredientAmount
+from .schemas import IdSchema, PushNameSchema, PushNotificationInformation, RecipeEntryListSchema, RecipeEntryDetailSchema, RecipeEntryCreateSchema, \
     ErrorRecipeEntryCreateSchema, RecipeEntryUpdateSchema, RecipeStepCreateSchema, RecipeStepUpdateSchema, \
     RecipeStepUpdateErrorSchema, ReorderSchema, IngredientEntryListSchema, IngredientEntryCreateSchema, \
-    IngredientErrorListSchema, UnitEntryListSchema, IngredientAmountEntryCreateSchema, urlSchema
-
+    IngredientErrorListSchema, PushSetupSchema, UnitEntryListSchema, IngredientAmountEntryCreateSchema, urlSchema
+from pywebpush import WebPushException, webpush
 router = Router()
 
 
@@ -28,6 +33,31 @@ def list_recipes_entries(request):
     for recipe in recipes:
         recipe.userStr = recipe.user.username
     return recipes
+
+
+@router.post('/push/', auth=JWTAuth())
+def setupPush(request, data: PushSetupSchema):
+    data_dict = data.dict()
+    registration_id = data_dict.get('registration_id')
+    auth = data_dict.get('auth')
+    p256dh = data_dict.get('p256dh')
+    user = request.user
+    name = data_dict.get('name')
+    push_notification_obj = PushNotification.objects.get_or_create(
+        registration_id=registration_id,
+        auth=auth,
+        p256dh=p256dh,
+        user=user,
+        name=name,
+    )
+    return {}
+
+
+@router.get('/push/list/', response=List[PushNameSchema], auth=JWTAuth())
+def getPushList(request,):
+    user = request.user
+    push_notification_objs = PushNotification.objects.filter(user=user)
+    return push_notification_objs
 
 
 @router.get('/units/', response=List[UnitEntryListSchema], auth=JWTAuth())
@@ -77,6 +107,145 @@ def delete_ingredients_entries(request, entry_id: int):
     return ingredients
 
 
+@router.post('/push/set_default/', auth=JWTAuth())
+def set_default_push_obj(request, data: IdSchema):
+    user = request.user
+    data_dict = data.dict()
+    user_push_objs = PushNotification.objects.filter(user=request.user)
+    for push_obj in user_push_objs:
+        push_obj.current_active = False
+        push_obj.save()
+    push_obj = get_object_or_404(PushNotification, pk=data_dict['id'])
+
+    if push_obj.user != user:
+        return HttpResponse(status=404)
+
+    push_obj.current_active = True
+    push_obj.save()
+
+
+@router.post('/push/current/', auth=JWTAuth())
+def push_notification(request, post_data: PushNotificationInformation):
+    push_obj = get_object_or_404(
+        PushNotification, user=request.user, current_active=True)
+    post_data_dict = post_data.dict()
+
+    subscription_info = {
+        'endpoint': push_obj.registration_id,
+        'keys': {
+            'auth': push_obj.auth,
+            'p256dh': push_obj.p256dh,
+        }
+    }
+    try:
+        results = {"results": [
+            {"original_registration_id": push_obj.registration_id}]}
+        response = webpush(
+            subscription_info=subscription_info,
+            data=json.dumps(
+                {'body': post_data_dict['body'], 'title': post_data_dict['title'], 'url': post_data_dict['url']}),
+            vapid_private_key="private_key.pem",
+            vapid_claims={'sub': 'mailto:peterturner99p@gmail.com'},
+        )
+        if response.ok:
+            results["success"] = 1
+        else:
+            results["failure"] = 1
+            results["results"][0]["error"] = response.content
+        return results
+    except WebPushException as e:
+        if e.response is not None and e.response.status_code in [404, 410]:
+            results["failure"] = 1
+            results["results"][0]["error"] = e.message
+            return results
+
+    return HttpResponse({})
+
+
+@router.delete('/push/{entry_id}/', auth=JWTAuth())
+def delete_push_obj_entry(request, entry_id: int):
+    push_obj = get_object_or_404(PushNotification, pk=entry_id)
+    push_obj.delete()
+
+    return ({})
+
+
+@router.get('/push/{entry_id}/', auth=JWTAuth())
+def push_notification(request, entry_id: int):
+    push_obj = get_object_or_404(PushNotification, pk=entry_id)
+    if not (request.user == push_obj.user):
+        return {}
+    message = "test message"
+    subscription_info = {
+        'endpoint': push_obj.registration_id,
+        'keys': {
+            'auth': push_obj.auth,
+            'p256dh': push_obj.p256dh,
+        }
+    }
+    try:
+        results = {"results": [
+            {"original_registration_id": push_obj.registration_id}]}
+        response = webpush(
+            subscription_info=subscription_info,
+            data=json.dumps(
+                {'body': message, 'title': 'test', 'url': 'urltest'}),
+            vapid_private_key="private_key.pem",
+            vapid_claims={'sub': 'mailto:peterturner99p@gmail.com'},
+        )
+        if response.ok:
+            results["success"] = 1
+        else:
+            results["failure"] = 1
+            results["results"][0]["error"] = response.content
+        return results
+    except WebPushException as e:
+        if e.response is not None and e.response.status_code in [404, 410]:
+            results["failure"] = 1
+            results["results"][0]["error"] = e.message
+            return results
+
+    return HttpResponse({})
+
+
+@router.post('/push/{entry_id}/', auth=JWTAuth())
+def push_notification(request, entry_id: int, post_data: PushNotificationInformation):
+    push_obj = get_object_or_404(PushNotification, pk=entry_id)
+    post_data_dict = post_data.dict()
+    if not (request.user == push_obj.user):
+        return {}
+    subscription_info = {
+        'endpoint': push_obj.registration_id,
+        'keys': {
+            'auth': push_obj.auth,
+            'p256dh': push_obj.p256dh,
+        }
+    }
+    try:
+        results = {"results": [
+            {"original_registration_id": push_obj.registration_id}]}
+        response = webpush(
+            subscription_info=subscription_info,
+            data=json.dumps(
+                {'body': post_data_dict['body'], 'title': post_data_dict['title'], 'url': post_data_dict['url']}),
+            vapid_private_key="private_key.pem",
+            vapid_claims={'sub': 'mailto:peterturner99p@gmail.com'},
+        )
+        if response.ok:
+            results["success"] = 1
+        else:
+            results["failure"] = 1
+            results["results"][0]["error"] = response.content
+        return results
+    except WebPushException as e:
+        if e.response is not None and e.response.status_code in [404, 410]:
+            results["failure"] = 1
+            results["results"][0]["error"] = e.message
+            return results
+
+    return HttpResponse({})
+
+
 @router.post('/ingredients/', response={201: IngredientEntryListSchema, 400: IngredientErrorListSchema}, auth=JWTAuth())
 def create_ingredient_entry(request, ingredient: IngredientEntryCreateSchema):
     data_dict = ingredient.dict()
@@ -107,8 +276,19 @@ def import_url(request, data: urlSchema):
     ingredients_and_amounts = obj_data.get('recipeIngredient')
     recipe_steps = obj_data.get('recipeInstructions')
     recipe_yield = obj_data.get('recipeYield')
-    recipe_description = obj_data.get('description')
+    if recipe_yield:
+        if isinstance(recipe_yield, list):
+            recipe_yield = recipe_yield[0]
+        elif isinstance(recipe_yield, int):
+            pass
+        else:
+            recipe_yield = recipe_yield.split()[0]
+    else:
+        recipe_yield = 0
 
+    recipe_description = obj_data.get('description')
+    if not recipe_steps:
+        return JsonResponse({'message': 'Recipe failed to import'})
     recipe_obj = Recipe.objects.get_or_create(
         user=request.user, name=recipe_name, description=recipe_description, source=url, serves=recipe_yield)[0]
     order = 0
@@ -125,22 +305,42 @@ def import_url(request, data: urlSchema):
         if not len(parsed_ingredient.amount) > 0:
             continue
         ingredient_amount_and_unit = parsed_ingredient.amount[0]
-        ingredient_amount = ingredient_amount_and_unit.quantity
-        ingredient_unit = ingredient_amount_and_unit.unit if ingredient_amount_and_unit.unit else 'unit(s)'
-        unit_object = Unit.objects.get_or_create(name=ingredient_unit)
-        ingredient = Ingredient.objects.filter(name=ingredient_name)
-        if not ingredient.exists():
-            ingredient = Ingredient.objects.create(
-                name=ingredient_name, user=request.user, public=True)
+        if hasattr(ingredient_amount_and_unit, 'amounts'):
+            amounts = ingredient_amount_and_unit.amounts
+            for ingredient_amount_and_unit_sub in amounts:
+                ingredient_amount = ingredient_amount_and_unit_sub.quantity
+                ingredient_unit = ingredient_amount_and_unit_sub.unit if ingredient_amount_and_unit_sub.unit else 'unit(s)'
+                unit_object = Unit.objects.get_or_create(name=ingredient_unit)
+                ingredient = Ingredient.objects.filter(name=ingredient_name)
+                if not ingredient.exists():
+                    ingredient = Ingredient.objects.create(
+                        name=ingredient_name, user=request.user, public=True)
+                else:
+                    ingredient = ingredient.first()
+                if parsed_ingredient.comment:
+                    details = parsed_ingredient.comment.text
+                else:
+                    details = None
+                ingredient_and_amount_obj = IngredientAmount.objects.get_or_create(
+                    ingredient=ingredient, amount=ingredient_amount, units=unit_object[0], user=request.user, public=True, details=details)
+                recipe_obj.ingredients.add(ingredient_and_amount_obj[0])
         else:
-            ingredient = ingredient.first()
-        if parsed_ingredient.comment:
-            details = parsed_ingredient.comment.text
-        else:
-            details = None
-        ingredient_and_amount_obj = IngredientAmount.objects.get_or_create(
-            ingredient=ingredient, amount=ingredient_amount, units=unit_object[0], user=request.user, public=True, details=details)
-        recipe_obj.ingredients.add(ingredient_and_amount_obj[0])
+            ingredient_amount = ingredient_amount_and_unit.quantity or 0
+            ingredient_unit = ingredient_amount_and_unit.unit if ingredient_amount_and_unit.unit else 'unit(s)'
+            unit_object = Unit.objects.get_or_create(name=ingredient_unit)
+            ingredient = Ingredient.objects.filter(name=ingredient_name)
+            if not ingredient.exists():
+                ingredient = Ingredient.objects.create(
+                    name=ingredient_name, user=request.user, public=True)
+            else:
+                ingredient = ingredient.first()
+            if parsed_ingredient.comment:
+                details = parsed_ingredient.comment.text
+            else:
+                details = None
+            ingredient_and_amount_obj = IngredientAmount.objects.get_or_create(
+                ingredient=ingredient, amount=ingredient_amount, units=unit_object[0], user=request.user, public=True, details=details)
+            recipe_obj.ingredients.add(ingredient_and_amount_obj[0])
     recipe_obj.save()
     return JsonResponse({'message': 'Recipe imported successfully'})
 

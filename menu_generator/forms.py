@@ -3,7 +3,7 @@ from django import forms
 from django.core.exceptions import NON_FIELD_ERRORS
 
 from firstProjectApp.models import Recipe
-from .models import MenuAndTime
+from .models import MenuAndTime, RepeatingTask
 
 
 #
@@ -20,6 +20,20 @@ class MenuAndTimeForm(forms.ModelForm):
                 'unique_together': "A meal is already specified for that time",
             }
         }
+
+class RecurringTaskForm(forms.ModelForm):
+    class Meta:
+        model = RepeatingTask
+        fields = "__all__"
+    def clean_day(self):
+        day = self.cleaned_data['day']
+        original_day = self.instance.day
+        if day == 'None':
+            return None
+        if day == '':
+            return original_day
+        return day
+
 
 
 class MenuAndTimeUpdateForm(forms.ModelForm):

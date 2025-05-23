@@ -7,9 +7,11 @@ from firstProjectApp.schemas import RecipeEntryDetailSchema
 
 class SearchSchema(Schema):
     search: str = ""
-    
+
+
 class SearchDateRangeSchema(Schema):
     range: int = 0
+
 
 class IngredientList(Schema):
     ingredients: str = ""
@@ -41,3 +43,25 @@ class MealUpdateSchema(Schema):
 
 class errorSchema(Schema):
     messages: List[str] = []
+
+
+class RecurringTaskSchema(Schema):
+    name: str
+    description: str
+    frequency: str
+    time: str
+    day: str = None
+    duration: int
+    
+class ReadRecurringTaskSchema(Schema):
+    name: str
+    description: str
+    frequency: str
+    time: int = Field(0, alias='get_hour_int')
+    day: str
+    duration: int
+
+
+class RecurringTaskDetailSchema(Schema):
+    date: str
+    recurringTasks: List[ReadRecurringTaskSchema]
